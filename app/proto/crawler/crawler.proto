@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package crawler;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/Elderly-AI/crawler/proto/crawler;crawler";
+
+service Crawler {
+  rpc GetTags (GetTagsRequest) returns (GetTagsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/crawler/tags"
+    };
+  }
+
+  rpc GetLessonsCountByTags (GetLessonsCountByTagsRequest) returns (GetLessonsCountByTagsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/crawler/lessons"
+    };
+  }
+
+  rpc CheatExternalData (CheatExternalDataRequest) returns (CheatExternalDataResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/crawler/cheat"
+      body: "*"
+    };
+  }
+}
+
+message GetTagsRequest {
+  uint64 page = 1;
+  uint64 page_size = 2;
+  string search = 3;
+}
+
+message GetTagsResponse {
+  message Tag {
+    uint64 id = 1;
+    uint64 external_id = 2;
+    string title = 3;
+  }
+  repeated Tag tags = 1;
+  uint64 total = 2;
+}
+
+message GetLessonsCountByTagsRequest {
+  google.protobuf.Timestamp from = 1;
+  google.protobuf.Timestamp to = 2;
+  repeated uint64 tag_ids = 3;
+}
+
+message GetLessonsCountByTagsResponse {
+  double count = 1;
+}
+
+message CheatExternalDataRequest {
+}
+
+message CheatExternalDataResponse {
+}

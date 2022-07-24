@@ -1,0 +1,25 @@
+version: "3.6"
+services:
+  app:
+    build: "./app"
+    ports:
+      - "8090:8090"
+    depends_on:
+      - "postgres"
+    restart: "on-failure"
+  web:
+    build: "./web"
+    ports:
+      - "80:80"
+      - "84:84"
+    depends_on:
+      - "app"
+    restart: "on-failure"
+  postgres:
+    image: "postgres"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432"
+    restart: "on-failure"
