@@ -21,10 +21,13 @@ CREATE FUNCTION task_status_finished()
 
 CREATE TABLE IF NOT EXISTS tasks (
     task_id    TEXT PRIMARY KEY,
+    run_period BIGINT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT now(),
     updated_at TIMESTAMP NOT NULL DEFAULT now(),
     deleted_at TIMESTAMP DEFAULT NULL
 );
+
+INSERT INTO tasks (task_id, run_period) VALUES('cheat_task', 86000000000000);
 
 CREATE TABLE IF NOT EXISTS tasks_logs (
     task_log_id SERIAL PRIMARY KEY,

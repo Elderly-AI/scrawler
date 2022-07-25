@@ -15,10 +15,10 @@ func (i Implementation) GetLessonsCountByTags(ctx context.Context, req *desc.Get
 	}
 	to := time.Now()
 	if req.GetTo() != nil {
-		from = req.GetTo().AsTime()
+		to = req.GetTo().AsTime()
 	}
 	tags := make([]model.Tag, len(req.GetTagIds()))
-	for j, t := range req.GetTagIds() {
+	for j, t := range req.TagIds {
 		tags[j] = model.Tag{ID: t}
 	}
 	count, err := i.facade.GetLessonsCountByTags(ctx, from, to, tags)

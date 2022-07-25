@@ -8,9 +8,9 @@ import (
 )
 
 func (f Facade) GetLessonsCountByTags(ctx context.Context, from, to time.Time, tags []model.Tag) (float64, error) {
-	tagsExternalIDs := make([]uint64, len(tags))
+	tagsIDs := make([]uint64, len(tags))
 	for i, t := range tags {
-		tagsExternalIDs[i] = t.ExternalID
+		tagsIDs[i] = t.ID
 	}
-	return f.crawlerDB.GetLessonsCountByTags(ctx, tagsExternalIDs, from, to)
+	return f.crawlerDB.GetLessonsCountByTags(ctx, tagsIDs, from, to)
 }

@@ -3,9 +3,11 @@ package crawler
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"time"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
-	"time"
 
 	"github.com/Elderly-AI/scrawler/internal/pkg/model"
 )
@@ -80,13 +82,14 @@ func (d Database) GetTagsByExternalIDs(ctx context.Context, tags []model.Tag) ([
 	return tg, err
 }
 
-func (d Database) GetLessonsCountByTags(ctx context.Context, tagsExternalIDs []uint64, from, to time.Time) (count float64, err error) {
-	query := `SELECT SUM(ll.lessons_count) AS count FROM lesson_logs AS ll
+func (d Database) GetLessonsCountByTags(ctx context.Context, tagsIDs []uint64, from, to time.Time) (count float64, err error) {
+	fmt.Println(tagsIDs, from, to)
+	query := `SELECT COALESCE(SUM(ll.lessons_count), 0) AS count FROM lesson_logs AS ll
          	  LEFT JOIN lesson_log_tag AS llt ON llt.lesson_log_id = ll.lesson_log_id
          	  LEFT JOIN tags AS t ON t.tag_id = llt.tag_id 
          	  WHERE t.deleted_at IS NULL AND llt.deleted_at IS NULL AND ll.deleted_at IS NULL AND
-         	        t.external_id = ANY($1 :: BIGINT[]) AND ll.created_at > $2 AND ll.created_at < $3`
-	err = d.conn.Get(&count, query, pq.Array(tagsExternalIDs), from, to)
+         	        t.tag_id = ANY($1 :: BIGINT[]) AND ll.created_at > $2 AND ll.created_at < $3`
+	err = d.conn.Get(&count, query, pq.Array(tagsIDs), from, to)
 	return
 }
 

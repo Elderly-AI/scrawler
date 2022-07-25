@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/golang/glog"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -14,18 +15,33 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/Elderly-AI/scrawler/internal/app/crawler"
+	"github.com/Elderly-AI/scrawler/internal/app/tasks"
 	"github.com/Elderly-AI/scrawler/internal/pkg/config"
 	crawlerfacade "github.com/Elderly-AI/scrawler/internal/pkg/crawler"
 	crawlerdb "github.com/Elderly-AI/scrawler/internal/pkg/database/crawler"
+	tasksdb "github.com/Elderly-AI/scrawler/internal/pkg/database/tasks"
 	common "github.com/Elderly-AI/scrawler/internal/pkg/middleware"
+	"github.com/Elderly-AI/scrawler/internal/pkg/model"
+	tasksfacade "github.com/Elderly-AI/scrawler/internal/pkg/tasks"
 	crawlerdesc "github.com/Elderly-AI/scrawler/pkg/proto/crawler"
 )
 
-func registerServices(opts Options, s *grpc.Server) {
+const taskRunnerDuration = time.Minute * 10
+
+func registerServices(opts Options, s *grpc.Server) Impls {
 	crawlerDB := crawlerdb.New(opts.PosgtresConnection)
 	crawlerFacade := crawlerfacade.New(crawlerDB)
 	crawlerImplementation := crawler.New(crawlerFacade)
 	crawlerdesc.RegisterCrawlerServer(s, crawlerImplementation)
+
+	tasksDB := tasksdb.New(opts.PosgtresConnection)
+	tasksFacade := tasksfacade.New(tasksDB)
+	tasksImplementation := tasks.New(tasksFacade, crawlerImplementation)
+
+	return Impls{
+		crawlerImpl: crawlerImplementation,
+		tasksImpl:   tasksImplementation,
+	}
 }
 
 func newGateway(ctx context.Context, conn *grpc.ClientConn, opts []gwruntime.ServeMuxOption) (http.Handler, error) {
@@ -45,6 +61,11 @@ type Options struct {
 	Addr               string
 	Mux                []gwruntime.ServeMuxOption
 	PosgtresConnection *sqlx.DB
+}
+
+type Impls struct {
+	crawlerImpl crawler.Implementation
+	tasksImpl   tasks.Implementation
 }
 
 func createInitialOptions(conf config.Config) Options {
@@ -74,7 +95,7 @@ func main() {
 	}
 
 	s := grpc.NewServer()
-	registerServices(opts, s)
+	impls := registerServices(opts, s)
 	log.Println("Serving gRPC on 0.0.0.0:8080")
 	go func() {
 		log.Fatalln(s.Serve(lis))
@@ -105,6 +126,12 @@ func main() {
 		Handler: common.AllowCORS(mux), // TODO add panic middleware
 	}
 
+	log.Println("starting background tasks")
+	go func() {
+		impls.tasksImpl.RunTasks(context.Background(), []model.TaskID{model.TaskIDCheat}, time.Duration(taskRunnerDuration))
+	}()
+
 	log.Println("Serving gRPC-Gateway on http://0.0.0.0:8090")
 	log.Fatalln(gwServer.ListenAndServe())
+
 }
