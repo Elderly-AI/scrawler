@@ -12,3 +12,6 @@
 5. Remember IDs
 6. Use http://localhost/swagger/#/Crawler/Crawler_GetLessonsCountByTags to get lessons count by time intervals
 7. Lessons updates every day
+
+
+PS. Use http://localhost/swagger/#/Crawler/Crawler_CheatExternalData to run job for your hands if you see some problems with job. This handler user force to run job immediately.
